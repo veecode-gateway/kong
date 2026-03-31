@@ -1,9 +1,7 @@
 name: Cherry Pick to remote repository v2
 on:
-  pull_request:
-    types: [closed, labeled]
-  issue_comment:
-    types: [created]
+  # APIP: PR/comment triggers disabled — not applicable to fork
+  workflow_dispatch:
 permissions:
   contents: write # so it can comment
   pull-requests: write # so it can create pull requests and labels

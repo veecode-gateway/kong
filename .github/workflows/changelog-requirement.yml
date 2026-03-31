@@ -1,13 +1,8 @@
 name: Changelog Requirement
 
 on:
-  pull_request:
-    types: [ opened, synchronize, labeled, unlabeled ]
-    paths:
-      - 'kong/**'
-      - '**.rockspec'
-      - '.requirements'
-      - 'changelog/**'
+  # APIP: PR trigger disabled — not applicable to fork
+  workflow_dispatch:
 
 jobs:
   require-changelog:

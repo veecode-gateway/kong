@@ -1,7 +1,7 @@
 name: Close inactive issues
 on:
-  schedule:
-    - cron: "30 1 * * *"
+  # APIP: schedule disabled — not applicable to fork
+  workflow_dispatch:
 
 jobs:
   close-issues:

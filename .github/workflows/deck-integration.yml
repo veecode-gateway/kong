@@ -1,14 +1,8 @@
 name: Gateway decK Integration Tests
 
 on:
-  pull_request:
-    paths:
-    - 'kong/db/schema/**/*.lua'
-    - 'kong/**/schema.lua'
-    - 'kong/plugins/**/daos.lua'
-    - 'kong/db/dao/*.lua'
-    - 'kong/api/**/*.lua'
-    - '.github/workflows/deck-integration.yml'
+  # APIP: PR trigger disabled — run manually if needed
+  workflow_dispatch:
 
 permissions:
   pull-requests: write

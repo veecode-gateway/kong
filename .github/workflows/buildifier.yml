@@ -1,21 +1,8 @@
 name: Buildifier
 
 on:
-  pull_request:
-    paths:
-    - '**/*.bzl'
-    - '**/*.bazel'
-    - 'BUILD*'
-    - 'WORKSPACE*'
-  push:
-    paths:
-    - '**/*.bzl'
-    - '**/*.bazel'
-    - 'BUILD*'
-    - 'WORKSPACE*'
-    branches:
-    - master
-    - release/*
+  # APIP: PR/push triggers disabled — run manually if needed
+  workflow_dispatch:
 
 jobs:
 

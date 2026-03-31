@@ -1,8 +1,8 @@
 name: Label community PRs
 
 on:
-  schedule:
-    - cron: '*/30 * * * *'
+  # APIP: schedule disabled — not applicable to fork
+  workflow_dispatch:
 
 permissions:
   pull-requests: write

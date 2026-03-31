@@ -1,11 +1,8 @@
 name: ast-grep lint
 
 on:
-  pull_request:
-    paths:
-      - .github/workflows/ast-grep.yml # this workflow
-      - sgconfig.yml
-      - .ci/ast-grep/**
+  # APIP: PR trigger disabled — run manually if needed
+  workflow_dispatch:
 
       # globs for files that we want to check with ast-grep here
       - '**/*.lua'

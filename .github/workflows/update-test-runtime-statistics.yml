@@ -1,12 +1,7 @@
 name: Update test runtime statistics file for test scheduling
 on:
+  # APIP: schedule and push disabled — run manually if needed
   workflow_dispatch:
-  schedule:
-    - cron: "1 0 * * SAT"
-  # push rule below needed for testing only
-  push:
-    branches:
-      - feat/test-run-scheduler
 
 jobs:
   process-statistics:

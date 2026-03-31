@@ -3,19 +3,7 @@ name: Package & Release
 # The workflow to build and release official Kong packages and images.
 
 on:  # yamllint disable-line rule:truthy
-  pull_request:
-    paths-ignore:
-    - '**/*.md'
-    - 'COPYRIGHT'
-    - 'LICENSE'
-    - '.github/workflows/build_and_test.yml'
-    - 'changelog/**'
-    - 'kong.conf.default'
-  schedule:
-  - cron:  '0 0 * * *'
-  push:
-    branches:
-    - master
+  # APIP: auto triggers disabled — use apip-release.yml instead
   workflow_dispatch:
     inputs:
       official:

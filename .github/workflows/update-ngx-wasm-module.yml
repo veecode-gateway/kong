@@ -1,10 +1,8 @@
 name: Update ngx_wasm_module dependency
 
 on:
+  # APIP: schedule disabled — run manually if needed
   workflow_dispatch:
-  schedule:
-  # run weekly
-  - cron: '0 0 * * 0'
 
 jobs:
   update:

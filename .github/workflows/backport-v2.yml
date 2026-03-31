@@ -1,7 +1,7 @@
 name: Backport v2
 on:
-  pull_request:
-    types: [closed, labeled] # runs when the pull request is closed/merged or labeled (to trigger a backport in hindsight)
+  # APIP: PR trigger disabled — not applicable to fork
+  workflow_dispatch:
 permissions:
   contents: write # so it can comment
   pull-requests: write # so it can create pull requests

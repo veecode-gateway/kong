@@ -1,8 +1,7 @@
 name: Openresty patches review companion
 on:
-  pull_request:
-    paths:
-    - 'build/openresty/patches/**'
+  # APIP: PR trigger disabled — run manually if needed
+  workflow_dispatch:
 
 jobs:
   create-pr:

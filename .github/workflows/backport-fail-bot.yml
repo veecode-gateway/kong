@@ -1,8 +1,8 @@
 name: Forward failed backport alert to Slack
 
 on:
-  issue_comment:
-    types: [created]
+  # APIP: comment trigger disabled — not applicable to fork
+  workflow_dispatch:
 
 jobs:
   check_comment:

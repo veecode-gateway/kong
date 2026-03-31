@@ -1,25 +1,6 @@
 name: Build & Test
 on:
-  pull_request:
-    paths-ignore:
-    # ignore markdown files (CHANGELOG.md, README.md, etc.)
-    - '**/*.md'
-    - 'COPYRIGHT'
-    - 'LICENSE'
-    - '.github/workflows/release.yml'
-    - 'changelog/**'
-    - 'kong.conf.default'
-  push:
-    paths-ignore:
-    # ignore markdown files (CHANGELOG.md, README.md, etc.)
-    - '**/*.md'
-    # ignore PRs for the generated COPYRIGHT file
-    - 'COPYRIGHT'
-    - 'LICENSE'
-    branches:
-    - master
-    - release/*
-    - test-please/*
+  # APIP: auto triggers disabled — run manually if needed
   workflow_dispatch:
     inputs:
       coverage:

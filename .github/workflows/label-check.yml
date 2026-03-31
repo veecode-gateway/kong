@@ -1,7 +1,7 @@
 name: Pull Request Label Checker
 on:
-  pull_request:
-    types: [opened, edited, synchronize, labeled, unlabeled]
+  # APIP: PR trigger disabled — not applicable to fork
+  workflow_dispatch:
 jobs:
   check-labels:
     name: prevent merge labels

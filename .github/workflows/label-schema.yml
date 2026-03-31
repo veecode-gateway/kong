@@ -1,7 +1,7 @@
 name: Pull Request Schema Labeler
 on:
-  pull_request:
-    types: [opened, edited, labeled, unlabeled]
+  # APIP: PR trigger disabled — not applicable to fork
+  workflow_dispatch:
 jobs:
   schema-change-labels:
     if: "${{ contains(github.event.*.labels.*.name, 'schema-change-noteworthy') }}"

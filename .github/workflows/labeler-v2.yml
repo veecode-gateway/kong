@@ -1,6 +1,7 @@
 name: "Pull Request Labeler v2"
 on:
-- pull_request
+  # APIP: PR trigger disabled — not applicable to fork
+  workflow_dispatch:
 
 jobs:
   labeler:
