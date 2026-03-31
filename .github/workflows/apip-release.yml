@@ -116,7 +116,7 @@ jobs:
       - name: Package Kong RPM
         env:
           RELEASE_SIGNING_GPG_KEY: ${{ secrets.RELEASE_SIGNING_GPG_KEY }}
-          NFPM_RPM_PASSPHRASE: ${{ secrets.RELEASE_SIGNING_GPG_KEY_PASSPHRASE }}
+          NFPM_RPM_PASSPHRASE: ${{ secrets.RELEASE_SIGNING_GPG_KEY_PASSPHRASE || '' }}
         run: |
           if [ -n "${RELEASE_SIGNING_GPG_KEY:-}" ]; then
             RPM_SIGNING_KEY_FILE=$(mktemp)
