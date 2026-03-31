@@ -40,19 +40,19 @@ jobs:
   build-rpm:
     name: Build RPM - ${{ matrix.arch }}
     needs: metadata
-    runs-on: ubuntu-24.04
-    container:
-      image: rockylinux:9
-      options: --privileged
-
     strategy:
       fail-fast: false
       matrix:
         include:
           - arch: amd64
-            bazel-args: ""
+            runner: ubuntu-24.04
           - arch: arm64
-            bazel-args: "--platforms=//:rhel10-crossbuild-aarch64 --//:brotli=False"
+            runner: ubuntu-24.04-arm
+
+    runs-on: ${{ matrix.runner }}
+    container:
+      image: rockylinux:9
+      options: --privileged
 
     steps:
       - name: Install build prerequisites
@@ -111,8 +111,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          bazel build --config release //build:kong --verbose_failures ${{ matrix.bazel-args }}
-
+          bazel build --config release //build:kong --verbose_failures
       - name: Package Kong RPM
         env:
           RELEASE_SIGNING_GPG_KEY: ${{ secrets.RELEASE_SIGNING_GPG_KEY }}
@@ -127,8 +126,7 @@ jobs:
             --action_env=RPM_SIGNING_KEY_FILE \
             --action_env=NFPM_RPM_PASSPHRASE \
             --verbose_failures \
-            ${{ matrix.bazel-args }}
-
+            
       - name: Debug on failure
         if: failure()
         run: |
