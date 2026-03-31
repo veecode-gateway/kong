@@ -76,7 +76,7 @@ overrides:
   rpm:
     depends:
     - ca-certificates
-    - pcre
+    - pcre2
     - perl
     - perl-Time-HiRes
     - zlib
