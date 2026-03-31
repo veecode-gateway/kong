@@ -4,9 +4,6 @@ on:
   # APIP: PR trigger disabled — run manually if needed
   workflow_dispatch:
 
-      # globs for files that we want to check with ast-grep here
-      - '**/*.lua'
-
 concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
   cancel-in-progress: true
