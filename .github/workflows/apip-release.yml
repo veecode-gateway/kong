@@ -42,7 +42,7 @@ jobs:
     needs: metadata
     runs-on: ubuntu-24.04
     container:
-      image: rockylinux:10
+      image: rockylinux:9
       options: --privileged
 
     strategy:
@@ -64,7 +64,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: /usr/local/git
-          key: rhel10-${{ matrix.arch }}-git-2.41.0
+          key: rhel9-${{ matrix.arch }}-git-2.41.0
 
       - name: Install newer Git
         if: steps.cache-git.outputs.cache-hit != 'true'
