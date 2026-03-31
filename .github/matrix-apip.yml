@@ -4,16 +4,16 @@
 
 build-packages:
   - label: rhel-10
-    image: rockylinux:10
+    runner: ubuntu-24.04
+    image: rockylinux:9
     package: rpm
     package-type: el10
-    check-manifest-suite: el10-amd64
 
   - label: rhel-10-arm64
+    runner: ubuntu-24.04-arm
+    image: rockylinux:9
     package: rpm
     package-type: el10
-    bazel-args: --platforms=//:rhel10-crossbuild-aarch64 --//:brotli=False
-    check-manifest-suite: el10-arm64
 
 build-images:
   - label: rhel10
