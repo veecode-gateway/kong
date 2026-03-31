@@ -1,0 +1,25 @@
+# VeeCode APIP build matrix — RHEL 10 only
+# Reference file documenting supported targets.
+# The apip-release.yml workflow uses an inline matrix for simplicity.
+
+build-packages:
+  - label: rhel-10
+    image: rockylinux:10
+    package: rpm
+    package-type: el10
+    check-manifest-suite: el10-amd64
+
+  - label: rhel-10-arm64
+    package: rpm
+    package-type: el10
+    bazel-args: --platforms=//:rhel10-crossbuild-aarch64 --//:brotli=False
+    check-manifest-suite: el10-arm64
+
+build-images:
+  - label: rhel10
+    base-image: registry.access.redhat.com/ubi10-minimal
+    package: rpm
+    rpm_platform: el10
+    artifact-from: rhel-10
+    artifact-from-alt: rhel-10-arm64
+    docker-platforms: linux/amd64, linux/arm64

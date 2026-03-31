@@ -1,0 +1,212 @@
+name: APIP Release
+
+# Simplified release pipeline for VeeCode APIP.
+# Builds RHEL 10 RPMs (amd64 + arm64), creates a GitHub Release,
+# and triggers the docker-kong repo to build the container image.
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Release version (e.g. 3.10.0)"
+        required: true
+        type: string
+      official:
+        description: "Official release? (tags image as latest)"
+        required: true
+        type: boolean
+        default: false
+
+env:
+  DOCKER_KONG_REPO: ${{ github.repository_owner }}/docker-kong
+
+jobs:
+  metadata:
+    name: Metadata
+    runs-on: ubuntu-24.04
+    outputs:
+      kong-version: ${{ steps.info.outputs.kong-version }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Extract version
+        id: info
+        run: |
+          KONG_VERSION=$(bash scripts/grep-kong-version.sh)
+          echo "kong-version=$KONG_VERSION" >> "$GITHUB_OUTPUT"
+          echo "### APIP Release" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Kong version: $KONG_VERSION" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Input version: ${{ inputs.version }}" >> "$GITHUB_STEP_SUMMARY"
+
+  build-rpm:
+    name: Build RPM - ${{ matrix.arch }}
+    needs: metadata
+    runs-on: ubuntu-24.04
+    container:
+      image: rockylinux:10
+      options: --privileged
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: amd64
+            bazel-args: ""
+          - arch: arm64
+            bazel-args: "--platforms=//:rhel10-crossbuild-aarch64 --//:brotli=False"
+
+    steps:
+      - name: Install build prerequisites
+        run: |
+          yum install -y tar gzip which file zlib-devel
+
+      - name: Cache Git
+        id: cache-git
+        uses: actions/cache@v4
+        with:
+          path: /usr/local/git
+          key: rhel10-${{ matrix.arch }}-git-2.41.0
+
+      - name: Install newer Git
+        if: steps.cache-git.outputs.cache-hit != 'true'
+        run: |
+          yum update -y
+          yum groupinstall -y 'Development Tools'
+          yum install -y wget zlib-devel openssl-devel curl-devel expat-devel gettext-devel perl-CPAN perl-devel
+          wget https://mirrors.edge.kernel.org/pub/software/scm/git/git-2.41.0.tar.gz
+          tar xf git-2.41.0.tar.gz
+          cd git-2.41.0
+          make configure
+          ./configure --prefix=/usr/local/git
+          make -j$(nproc)
+          make install
+
+      - name: Add Git to PATH
+        run: echo "/usr/local/git/bin" >> "$GITHUB_PATH"
+
+      - name: Checkout Kong source code
+        uses: actions/checkout@v4
+
+      - name: Swap git with https
+        run: git config --global url."https://github".insteadOf git://github
+
+      - name: Set .requirements into environment variables
+        run: grep -v '^#' .requirements >> "$GITHUB_ENV"
+
+      - name: Setup Bazel
+        uses: bazel-contrib/setup-bazel@e403ad507104847c3539436f64a9e9eecc73eeec # 0.8.5
+        with:
+          bazelisk-version: "1.20.0"
+          bazelisk-cache: true
+
+      - name: Install RPM build dependencies
+        run: |
+          yum groupinstall -y 'Development Tools'
+          dnf install -y 'dnf-command(config-manager)'
+          dnf config-manager --set-enabled crb || true
+          yum install -y libyaml-devel
+          yum install -y cpanminus || (yum install -y perl && curl -L https://raw.githubusercontent.com/miyagawa/cpanminus/master/cpanm | perl - App::cpanminus)
+          cpanm IPC/Cmd.pm
+
+      - name: Build Kong dependencies
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          bazel build --config release //build:kong --verbose_failures ${{ matrix.bazel-args }}
+
+      - name: Package Kong RPM
+        env:
+          RELEASE_SIGNING_GPG_KEY: ${{ secrets.RELEASE_SIGNING_GPG_KEY }}
+          NFPM_RPM_PASSPHRASE: ${{ secrets.RELEASE_SIGNING_GPG_KEY_PASSPHRASE }}
+        run: |
+          if [ -n "${RELEASE_SIGNING_GPG_KEY:-}" ]; then
+            RPM_SIGNING_KEY_FILE=$(mktemp)
+            echo "$RELEASE_SIGNING_GPG_KEY" > "$RPM_SIGNING_KEY_FILE"
+            export RPM_SIGNING_KEY_FILE
+          fi
+          bazel build --config release :kong_el10 \
+            --action_env=RPM_SIGNING_KEY_FILE \
+            --action_env=NFPM_RPM_PASSPHRASE \
+            --verbose_failures \
+            ${{ matrix.bazel-args }}
+
+      - name: Debug on failure
+        if: failure()
+        run: |
+          cat bazel-out/_tmp/actions/stderr-* 2>/dev/null || true
+          sudo dmesg || true
+          tail -n500 bazel-out/**/*/CMake.log 2>/dev/null || true
+
+      - name: Upload RPM artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: rhel10-${{ matrix.arch }}-rpm
+          path: bazel-bin/pkg
+          retention-days: 3
+
+  create-release:
+    name: Create GitHub Release
+    needs: [metadata, build-rpm]
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download amd64 RPM
+        uses: actions/download-artifact@v4
+        with:
+          name: rhel10-amd64-rpm
+          path: artifacts/amd64
+
+      - name: Download arm64 RPM
+        uses: actions/download-artifact@v4
+        with:
+          name: rhel10-arm64-rpm
+          path: artifacts/arm64
+
+      - name: Prepare release assets
+        id: assets
+        run: |
+          VERSION="${{ inputs.version }}"
+          AMD64_RPM=$(find artifacts/amd64 -name '*.rpm' | head -1)
+          ARM64_RPM=$(find artifacts/arm64 -name '*.rpm' | head -1)
+          cp "$AMD64_RPM" "kong-${VERSION}.el10.amd64.rpm"
+          cp "$ARM64_RPM" "kong-${VERSION}.el10.arm64.rpm"
+          echo "amd64=kong-${VERSION}.el10.amd64.rpm" >> "$GITHUB_OUTPUT"
+          echo "arm64=kong-${VERSION}.el10.arm64.rpm" >> "$GITHUB_OUTPUT"
+          ls -lh kong-*.rpm
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          VERSION="${{ inputs.version }}"
+          TAG="v${VERSION}"
+          PRERELEASE_FLAG=""
+          if [ "${{ inputs.official }}" != "true" ]; then
+            PRERELEASE_FLAG="--prerelease"
+          fi
+          gh release create "$TAG" \
+            --title "APIP $TAG" \
+            --generate-notes \
+            $PRERELEASE_FLAG \
+            "${{ steps.assets.outputs.amd64 }}" \
+            "${{ steps.assets.outputs.arm64 }}"
+
+  trigger-docker-build:
+    name: Trigger Docker Build
+    needs: [metadata, create-release]
+    runs-on: ubuntu-24.04
+
+    steps:
+      - name: Dispatch to docker-kong
+        env:
+          GH_TOKEN: ${{ secrets.DOCKER_KONG_PAT }}
+        run: |
+          gh api repos/${{ env.DOCKER_KONG_REPO }}/dispatches \
+            -f event_type=apip-release \
+            -f 'client_payload[kong_version]=${{ inputs.version }}' \
+            -f 'client_payload[release_tag]=v${{ inputs.version }}' \
+            -f 'client_payload[official]=${{ inputs.official }}' \
+            -f 'client_payload[kong_repo]=${{ github.repository }}'
