@@ -56,6 +56,16 @@ build-packages:
   package-type: el9
   bazel-args: --platforms=//:rhel9-crossbuild-aarch64 --//:brotli=False
   check-manifest-suite: el9-arm64
+- label: rhel-10
+  image: rockylinux:10
+  package: rpm
+  package-type: el10
+  check-manifest-suite: el10-amd64
+- label: rhel-10-arm64
+  package: rpm
+  package-type: el10
+  bazel-args: --platforms=//:rhel10-crossbuild-aarch64 --//:brotli=False
+  check-manifest-suite: el10-arm64
 
   # Amazon Linux
 - label: amazonlinux-2
@@ -184,6 +194,18 @@ release-packages:
   artifact-version: 9
   artifact-type: rhel
   artifact: kong.el9.arm64.rpm
+- label: rhel-10
+  package: rpm
+  artifact-from: rhel-10
+  artifact-version: 10
+  artifact-type: rhel
+  artifact: kong.el10.amd64.rpm
+- label: rhel-10-arm64
+  package: rpm
+  artifact-from: rhel-10-arm64
+  artifact-version: 10
+  artifact-type: rhel
+  artifact: kong.el10.arm64.rpm
 
 # Amazon Linux
 - label: amazonlinux-2

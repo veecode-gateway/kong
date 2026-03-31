@@ -1,6 +1,7 @@
 load(":cc_toolchain_config.bzl", "cc_toolchain_config")
 
 aarch64_glibc_distros = {
+    "rhel10": "14",
     "rhel9": "11",
     "rhel8": "8",
     "aws2023": "11",

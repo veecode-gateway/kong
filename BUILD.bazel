@@ -42,6 +42,15 @@ nfpm_pkg(
 )
 
 nfpm_pkg(
+    name = "kong_el10",
+    config = "//build:package/nfpm.yaml",
+    env = nfpm_env,
+    packager = "rpm",
+    pkg_name = "kong.el10",
+    visibility = ["//visibility:public"],
+)
+
+nfpm_pkg(
     name = "kong_el9",
     config = "//build:package/nfpm.yaml",
     env = nfpm_env,

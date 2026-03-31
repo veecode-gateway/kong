@@ -7,6 +7,12 @@ constraint_value(
 )
 
 constraint_value(
+    name = "rhel10",
+    constraint_setting = ":distro",
+    visibility = ["//visibility:public"],
+)
+
+constraint_value(
     name = "rhel9",
     constraint_setting = ":distro",
     visibility = ["//visibility:public"],
