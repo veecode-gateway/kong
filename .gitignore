@@ -45,3 +45,7 @@ bazel-*
 # remove it after migrating from WORKSPACE to Bzlmod
 MODULE.bazel.lock
 spec/fixtures/external_plugins/go/go-hello
+
+# temp folders
+cp2/
+pkg-out/
