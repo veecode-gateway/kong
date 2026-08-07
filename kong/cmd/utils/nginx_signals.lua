@@ -4,11 +4,8 @@ local kill = require "kong.cmd.utils.kill"
 local meta = require "kong.meta"
 local pl_path = require "pl.path"
 local version = require "version"
-local pl_utils = require "pl.utils"
+local process = require "kong.cmd.utils.process"
 local process_secrets = require "kong.cmd.utils.process_secrets"
-
-
-local strip = require("kong.tools.string").strip
 
 
 local fmt = string.format
@@ -40,7 +37,7 @@ local nginx_compatible = version.set(unpack(meta._DEPENDENCIES.nginx))
 
 local function is_openresty(bin_path)
   local cmd = fmt("%s -v", bin_path)
-  local ok, _, _, stderr = pl_utils.executeex(cmd)
+  local ok, _, _, stderr = process.execute({ bin_path, "-v" }, { capture = true })
   log.debug("%s: '%s'", cmd, stderr:sub(1, -2))
   if ok and stderr then
     local version_match = stderr:match(nginx_version_pattern)
@@ -127,12 +124,12 @@ function _M.find_nginx_bin(kong_conf)
     if is_openresty(path_to_check) then
       if path_to_check == "nginx" then
         log.debug("finding executable absolute path from $PATH...")
-        local ok, code, stdout, stderr = pl_utils.executeex("command -v nginx")
-        if ok and code == 0 then
-          path_to_check = strip(stdout)
+        local resolved, err = process.find_in_path("nginx")
+        if resolved then
+          path_to_check = resolved
 
         else
-          log.error("could not find executable absolute path: %s", stderr)
+          log.error("could not find executable absolute path: %s", err)
         end
       end
 
@@ -166,14 +163,13 @@ function _M.start(kong_conf)
     return nil, err
   end
 
-  local cmd = fmt("%s -p %s -c %s", nginx_bin, kong_conf.prefix, "nginx.conf")
+  local argv = { nginx_bin, "-p", kong_conf.prefix, "-c", "nginx.conf" }
 
-  log.debug("starting nginx: %s", cmd)
+  log.debug("starting nginx: %s", table.concat(argv, " "))
 
   if kong_conf.nginx_main_daemon == "on" then
-    -- running as daemon: capture command output to temp files using the
-    -- "executeex" method
-    local ok, _, _, stderr = pl_utils.executeex(cmd)
+    -- running as daemon: capture command output, only surfaced on failure
+    local ok, _, _, stderr = process.execute(argv, { capture = true })
     if not ok then
       unset_process_secrets_env(has_process_secrets)
       return nil, stderr
@@ -183,9 +179,9 @@ function _M.start(kong_conf)
 
   else
     -- running in foreground: do not redirect output since long running
-    -- processes would produce output filling the disk, use "execute" without
-    -- redirection instead.
-    local ok, retcode = pl_utils.execute(cmd)
+    -- processes would produce output filling the disk; the child inherits
+    -- our stdout/stderr instead.
+    local ok, retcode = process.execute(argv)
     if not ok then
       unset_process_secrets_env(has_process_secrets)
       return nil, fmt("failed to start nginx (exit code: %s)", retcode)
@@ -203,12 +199,15 @@ function _M.check_conf(kong_conf)
     return nil, err
   end
 
-  local cmd = fmt("KONG_NGINX_CONF_CHECK=true %s -t -p %s -c %s",
-                  nginx_bin, kong_conf.prefix, "nginx.conf")
+  local argv = { nginx_bin, "-t", "-p", kong_conf.prefix, "-c", "nginx.conf" }
 
-  log.debug("testing nginx configuration: %s", cmd)
+  log.debug("testing nginx configuration: KONG_NGINX_CONF_CHECK=true %s",
+            table.concat(argv, " "))
 
-  local ok, retcode, _, stderr = pl_utils.executeex(cmd)
+  local ok, retcode, _, stderr = process.execute(argv, {
+    capture = true,
+    env = { KONG_NGINX_CONF_CHECK = "true" },
+  })
   if not ok then
     return nil, fmt("nginx configuration is invalid (exit code %d):\n%s",
                     retcode, stderr)
@@ -238,12 +237,12 @@ function _M.reload(kong_conf)
     return nil, err
   end
 
-  local cmd = fmt("%s -p %s -c %s -s %s",
-                  nginx_bin, kong_conf.prefix, "nginx.conf", "reload")
+  local argv = { nginx_bin, "-p", kong_conf.prefix, "-c", "nginx.conf",
+                 "-s", "reload" }
 
-  log.debug("reloading nginx: %s", cmd)
+  log.debug("reloading nginx: %s", table.concat(argv, " "))
 
-  local ok, _, _, stderr = pl_utils.executeex(cmd)
+  local ok, _, _, stderr = process.execute(argv, { capture = true })
   if not ok then
     return nil, stderr
   end
