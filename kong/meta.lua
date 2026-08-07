@@ -2,7 +2,7 @@ local version = setmetatable({
   major = 3,
   minor = 10,
   patch = 0,
-  suffix = "-veecode.9",
+  suffix = "-veecode.10",
 }, {
   -- our Makefile during certain releases adjusts this line. Any changes to
   -- the format need to be reflected in both places
