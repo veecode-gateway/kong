@@ -1,16 +1,18 @@
 local pl_path = require "pl.path"
-local pl_utils = require "pl.utils"
+local process = require "kong.cmd.utils.process"
 local log = require "kong.cmd.utils.log"
 
-local cmd_tmpl = [[kill %s `cat %s 2>&1` >/dev/null 2>&1]]
+-- VeeCode APIP (ADR-0008): signal the pid from the pidfile via kill(2)
+-- instead of the `kill %s \`cat %s\`` shell template; `args` keeps its
+-- historical CLI shape ("-0", "-s TERM", ...) so call sites are unchanged.
 
 local function kill(pid_file, args)
   log.debug("sending signal to pid at: %s", pid_file)
-  local cmd = string.format(cmd_tmpl, args or "-0", pid_file)
+  args = args or "-0"
+  local sig = args:match("^%-s%s+(%w+)$") or args:match("^%-(%d+)$")
   if pl_path.exists(pid_file) then
-    log.debug(cmd)
-    local _, code = pl_utils.execute(cmd)
-    return code
+    log.debug("kill -%s `cat %s`", sig or args, pid_file)
+    return process.signal_from_file(pid_file, sig or "NONE")
   else
     log.debug("no pid file at: %s", pid_file)
     return 0

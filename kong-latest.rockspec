@@ -154,6 +154,7 @@ build = {
     ["kong.cmd.utils.tty"] = "kong/cmd/utils/tty.lua",
     ["kong.cmd.utils.nginx_signals"] = "kong/cmd/utils/nginx_signals.lua",
     ["kong.cmd.utils.prefix_handler"] = "kong/cmd/utils/prefix_handler.lua",
+    ["kong.cmd.utils.process"] = "kong/cmd/utils/process.lua",
     ["kong.cmd.utils.process_secrets"] = "kong/cmd/utils/process_secrets.lua",
     ["kong.cmd.utils.inject_confs"] = "kong/cmd/utils/inject_confs.lua",
     ["kong.cmd.utils.timer"] = "kong/cmd/utils/timer.lua",

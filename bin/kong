@@ -6,9 +6,9 @@ require("kong.globalpatches")({ cli = true })
 math.randomseed() -- Generate PRNG seed
 
 local pl_app = require "pl.lapp"
-local pl_utils = require "pl.utils"
 local pl_tablex = require "pl.tablex"
 local inject_confs = require "kong.cmd.utils.inject_confs"
+local process = require "kong.cmd.utils.process"
 
 local options = [[
  --v              verbose
@@ -147,11 +147,24 @@ elseif arg.v then
   resty_ngx_log_level = skip_inject_cmds[cmd_name] and "warn" or "info"
 end
 
-local resty_cmd = string.format(
-  "resty %s --main-conf \"%s\" --http-conf \"%s\" --stream-conf \"%s\" -e '%s'",
-  resty_ngx_log_level and ("--errlog-level " .. resty_ngx_log_level) or "", main_conf,
-  http_conf, stream_conf, inline_code)
+local resty_argv = { "resty" }
 
-local _, code = pl_utils.execute(resty_cmd)
+if resty_ngx_log_level then
+  resty_argv[#resty_argv + 1] = "--errlog-level"
+  resty_argv[#resty_argv + 1] = resty_ngx_log_level
+end
+
+for _, v in ipairs({
+  "--main-conf", main_conf,
+  "--http-conf", http_conf,
+  "--stream-conf", stream_conf,
+  "-e", inline_code,
+}) do
+  resty_argv[#resty_argv + 1] = v
+end
+
+-- VeeCode APIP (ADR-0008): argv exec instead of a shell string through
+-- os.execute -- the runtime image has no /bin/sh
+local _, code = process.execute(resty_argv)
 os.exit(code)
 -- vim: set ft=lua ts=2 sw=2 sts=2 et :

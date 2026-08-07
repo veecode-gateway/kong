@@ -4,6 +4,7 @@ local x509 = require("resty.openssl.x509")
 local name = require("resty.openssl.x509.name")
 local pl_file = require("pl.file")
 local pl_path = require("pl.path")
+local process = require("kong.cmd.utils.process")
 
 
 local assert = assert
@@ -48,8 +49,8 @@ local function generate_cert(duration, cert_file, key_file)
   assert(pl_file.write(cert_file, crt:to_PEM()))
   assert(pl_file.write(key_file, key:to_PEM("private")))
 
-  assert(os.execute("chmod 644 " .. cert_file))
-  assert(os.execute("chmod 600 " .. key_file))
+  assert(process.chmod(cert_file, "644"))
+  assert(process.chmod(key_file, "600"))
 
   log("Successfully generated certificate/key pairs, " ..
       "they have been written to: '" .. cert_file .. "' and '" ..

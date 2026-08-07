@@ -16,7 +16,7 @@ local x509_extension = require "resty.openssl.x509.extension"
 local x509_name = require "resty.openssl.x509.name"
 local pl_template = require "pl.template"
 local pl_tablex = require "pl.tablex"
-local pl_utils = require "pl.utils"
+local process = require "kong.cmd.utils.process"
 local pl_file = require "pl.file"
 local pl_path = require "pl.path"
 local pl_dir = require "pl.dir"
@@ -34,7 +34,6 @@ local shallow_copy = require("kong.tools.table").shallow_copy
 
 local getmetatable = getmetatable
 local makepath = pl_dir.makepath
-local tonumber = tonumber
 local tostring = tostring
 local assert = assert
 local string = string
@@ -230,15 +229,15 @@ end
 
 
 local function get_ulimit()
-  local ok, _, stdout, stderr = pl_utils.executeex "ulimit -n"
-  if not ok then
-    return nil, stderr
+  -- soft getrlimit(RLIMIT_NOFILE), the same value `ulimit -n` reports
+  local limit, err = process.get_rlimit_nofile()
+  if not limit then
+    return nil, err
   end
-  local sanitized_limit = strip(stdout)
-  if sanitized_limit:lower():match("unlimited") then
+  if limit == math.huge then -- RLIM_INFINITY, i.e. "unlimited"
     return 65536
   else
-    return tonumber(sanitized_limit)
+    return limit
   end
 end
 
@@ -495,8 +494,7 @@ local function prepare_prefixed_interface_dir(usr_path, interface_dir, kong_conf
   if not pl_path.exists(interface_path)
      and pl_path.exists(usr_interface_path) then
 
-    local ln_cmd = "ln -s " .. usr_interface_path .. " " .. interface_path
-    local ok, _, _, err_t = pl_utils.executeex(ln_cmd)
+    local ok, err_t = process.symlink(usr_interface_path, interface_path)
 
     if not ok then
       log.warn(err_t)
@@ -539,7 +537,7 @@ local function prepare_prefix(kong_config, nginx_custom_template_path, skip_writ
       return nil, err
     end
 
-    local ok, _, _, stderr = pl_utils.executeex("chmod 755 " .. kong_config.socket_path)
+    local ok, stderr = process.chmod(kong_config.socket_path, "755")
     if not ok then
       return nil, "can not set correct permissions for socket path: " .. kong_config.socket_path
                   .. " (" .. stderr .. ")"
