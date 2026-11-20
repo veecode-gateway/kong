@@ -53,6 +53,10 @@ jobs:
     container:
       image: rockylinux:9
       options: --privileged
+      # rockylinux:9 images no longer set PATH; without this, $GITHUB_PATH
+      # entries replace the PATH instead of being prepended to it.
+      env:
+        PATH: /usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 
     steps:
       - name: Install build prerequisites
