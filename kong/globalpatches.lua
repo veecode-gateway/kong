@@ -387,6 +387,27 @@ return function(options)
         -- never-expired key and an expired key with a TTL value of 0.
         return expire_at - ngx.now()
       end
+      -- VeeCode APIP: lua-resty-lock >= 0.10 (OpenResty 1.31.9.x) refuses to
+      -- create a lock on a dict without compare_expire. Mirrors
+      -- ngx_http_lua_ffi_shdict_compare_expire and resty.core.shdict.
+      function SharedDict:compare_expire(key, value, exptime)
+        if type(value) ~= "string" then
+          return nil, "bad value type"
+        end
+        if exptime ~= nil and (type(exptime) ~= "number" or exptime < 0) then
+          return nil, 'bad "exptime" argument'
+        end
+        local item = self.data[key]
+        if item == nil or item.value ~= value then
+          return nil, "lock ownership lost"
+        end
+        if exptime == nil then
+          self.data[key] = nil
+        else
+          item.info.expire_at = exptime > 0 and ngx.now() + exptime or nil
+        end
+        return true
+      end
 
       -- hack
       _G.ngx.shared = setmetatable({}, {
